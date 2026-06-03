@@ -1,0 +1,17 @@
+{
+  "name": "Content filter",
+  "description": "Filtering posts by most popular",
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "permissions": ["storage", "activeTab", "scripting"],
+  "action": {
+    "default_popup": "index.html"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "filter@example.com",
+      "strict_min_version": "42.0"
+    }
+  },
+  "host_permissions": ["<all_urls>"]
+}
