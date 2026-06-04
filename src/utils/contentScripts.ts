@@ -1,4 +1,4 @@
-type Data = {
+export type Data = {
   postsNumber: number;
 };
 
@@ -30,8 +30,6 @@ export const hidePosts4BoardByReplies = (storageKey: string) => {
       const hiddenClass = "post-hidden";
 
       const postNumber = (data["data"] as Data).postsNumber;
-
-      console.log(element, repliesCount);
 
       if (postNumber <= repliesCount) {
         element.classList.remove(hiddenClass);
@@ -75,32 +73,51 @@ export const filterPostsByReactions = (storageKey: string) => {
 
 export const filterVideosByViews = (storageKey: string) => {
   chrome.storage.sync.get(storageKey).then((data) => {
-    document
-      .querySelectorAll("div.ytd-rich-item-renderer")
-      .forEach((element) => {
-        const viewCountData = element
-          .querySelectorAll("span")[1]
-          ?.textContent?.split("\xa0");
+    const checkVideo = (element: Element): void => {
+      const viewCountData = element
+        .querySelectorAll("span.ytAttributedStringHost")[1]
+        ?.textContent?.split("\xa0");
 
-        console.log(viewCountData, element);
+      if (viewCountData) {
+        const postsNumber = (data["data"] as Data).postsNumber;
+        const viewNumber = parseInt(viewCountData[0] || "0");
+        const orderOfMagnitude = viewCountData[1]?.includes(".")
+          ? 10 ** 3
+          : viewCountData[1]?.includes(" ")
+            ? 10 ** 6
+            : 1; // looking for thousands and millions
+        const totalViewsNumber = viewNumber * orderOfMagnitude;
 
-        if (viewCountData) {
-          const postsNumber = (data["data"] as Data).postsNumber;
-          const viewNumber = parseInt(viewCountData[0] || "0");
-          const orderOfMagnitude = viewCountData[1]?.includes(".")
-            ? 10 ** 3
-            : viewCountData[1]?.includes(" ")
-              ? 10 ** 6
-              : 1; // looking for thousands and millions
-          const totalViewsNumber = viewNumber * orderOfMagnitude;
+        if (totalViewsNumber < postsNumber) {
+          element.setAttribute("hidden", "");
+        } else {
+          element.removeAttribute("hidden");
+        }
+      }
+    };
 
-          if (totalViewsNumber < postsNumber) {
-            element.setAttribute("hidden", "");
-          } else {
-            element.removeAttribute("hidden");
+    document.querySelectorAll("div.ytd-rich-item-renderer").forEach(checkVideo);
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node instanceof HTMLElement) {
+            console.log({ node });
+            node
+              .querySelectorAll("div.ytd-rich-item-renderer")
+              .forEach(checkVideo);
           }
         }
+      }
+    });
+
+    const container = document.querySelector("#contents");
+    if (container) {
+      observer.observe(container, {
+        childList: true,
+        subtree: true,
       });
+    }
   });
 };
 

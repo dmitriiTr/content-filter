@@ -1,15 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
-import { handleClick } from "./utils/main";
+import { handleClick, STORAGE_KEY } from "./utils/main";
+import type { Data } from "./utils/contentScripts";
 
 function App() {
   const [posts, setPosts] = useState(0);
+
+  useEffect(() => {
+    chrome.storage.sync.get(STORAGE_KEY).then(({ data }) => {
+      console.log(data);
+      setPosts((data as Data).postsNumber);
+    });
+  }, []);
 
   return (
     <>
       <section>
         <input
           type="number"
+          value={posts}
           onChange={(e) => setPosts(parseInt(e.target.value))}
         />
         <button className="counter" onClick={() => handleClick(posts)}>

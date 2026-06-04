@@ -6,7 +6,7 @@ import {
   hideNoize,
 } from "./contentScripts.js";
 
-const STORAGE_KEY = "data";
+export const STORAGE_KEY = "data";
 
 chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
   const tabId = tab?.id;
@@ -20,13 +20,6 @@ chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
     });
   }
 });
-
-// chrome.storage.sync.get(STORAGE_KEY).then(({ data }) => {
-//   const input = document.querySelector("#postnumber");
-//   if (input && data) {
-//     input.value = data.postNumber.toString();
-//   }
-// });
 
 export const handleClick = async (posts: number) => {
   // const hideForwarded = !!(
