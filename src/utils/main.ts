@@ -3,6 +3,7 @@ import {
   hidePostsBoardByReplies,
   filterPostsByReactions,
   filterVideosByViews,
+  hideNoize,
 } from "./contentScripts.js";
 
 const STORAGE_KEY = "data";
@@ -60,4 +61,5 @@ const urlToMethod = {
   "web.telegram.org": filterPostsByReactions,
   "www.youtube.com": filterVideosByViews,
   "boards.4chan.org": hidePosts4BoardByReplies,
+  "www.ozon.ru": hideNoize,
 };

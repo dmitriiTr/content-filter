@@ -103,3 +103,41 @@ export const filterVideosByViews = (storageKey: string) => {
       });
   });
 };
+
+export const hideNoize = (storageKey: string) => {
+  chrome.storage.sync.get(storageKey).then(() => {
+    const cleanTile = (tile: Element) => {
+      tile.querySelector("section")?.setAttribute("hidden", "");
+      tile
+        .querySelector(".tsHeadline500Medium")
+        ?.setAttribute(
+          "style",
+          "-webkit-text-fill-color: var(--bgActionPrimary) !important; background-image: none !important",
+        );
+
+      tile.querySelectorAll(".tsBodyControl400Small").forEach((infoElement) => {
+        infoElement.setAttribute("hidden", "");
+      });
+    };
+
+    document.querySelectorAll(".tile-root").forEach(cleanTile);
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node instanceof HTMLElement) {
+            node.querySelectorAll(".tile-root").forEach(cleanTile);
+          }
+        }
+      }
+    });
+
+    const container = document.querySelector("#contentScrollPaginator");
+    if (container) {
+      observer.observe(container, {
+        childList: true,
+        subtree: true,
+      });
+    }
+  });
+};
