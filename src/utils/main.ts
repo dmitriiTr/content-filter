@@ -21,17 +21,13 @@ chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
   }
 });
 
-export const handleClick = async (posts: number) => {
-  // const hideForwarded = !!(
-  //   document.querySelector("#hide_forwarded") as HTMLInputElement
-  // )?.checked;
-
+export const handleClick = async (posts: number, hideForwarded?: boolean) => {
   const [[tab]] = await Promise.all([
     chrome.tabs.query({ active: true, currentWindow: true }),
     chrome.storage.sync.set({
       [STORAGE_KEY]: {
         postsNumber: posts,
-        // hideForwarded,
+        hideForwarded,
       },
     }),
   ]);

@@ -1,5 +1,6 @@
 export type Data = {
   postsNumber: number;
+  hideForwarded: boolean;
 };
 
 export const hidePostsBoardByReplies = (storageKey: string) => {
@@ -41,33 +42,52 @@ export const hidePosts4BoardByReplies = (storageKey: string) => {
 };
 
 export const filterPostsByReactions = (storageKey: string) => {
-  // const getReactionNumber = (text: string) =>
-  //   parseFloat(text) * (text.includes("K") ? 1000 : 1);
+  const getReactionNumber = (text: string) =>
+    parseFloat(text) * (text.includes("K") ? 1000 : 1);
 
-  chrome.storage.sync.get(storageKey).then(() => {
-    document.querySelectorAll("div.Message").forEach((element) => {
-      const isForwared =
-        !!element.getElementsByClassName("is-forwarded").length;
+  chrome.storage.sync.get(storageKey).then((data) => {
+    const processMessage = (messageElement: Element): void => {
+      const isForwared = !!messageElement.querySelector(".is-forwarded");
 
-      const reactionsElements = element.querySelectorAll("button");
-      // const reactionsCount = Array.prototype.reduce.call(
-      //   reactionsElements,
-      //   (sum, reaction) =>
-      //     (sum += getReactionNumber(reaction.textContent || "0")),
-      //   0,
-      // );
+      const reactionsElements = messageElement.querySelectorAll("button");
+      const reactionsCount = Array.prototype.reduce.call(
+        reactionsElements,
+        (sum, reaction) =>
+          ((sum as number) += getReactionNumber(reaction.textContent || "0")),
+        0,
+      ) as number;
 
-      console.log(isForwared, reactionsElements.length);
+      console.log(reactionsCount, reactionsElements);
 
-      // if (
-      //   (data.hideForwarded && isForwared) ||
-      //   reactionsCount < data.postNumber
-      // ) {
-      //   element.setAttribute("hidden", "");
-      // } else {
-      //   element.removeAttribute("hidden");
-      // }
+      if (
+        ((data["data"] as Data).hideForwarded && isForwared) ||
+        reactionsCount < (data["data"] as Data).postsNumber
+      ) {
+        messageElement.setAttribute("hidden", "");
+      } else {
+        messageElement.removeAttribute("hidden");
+      }
+    };
+
+    document.querySelectorAll("div.Message").forEach(processMessage);
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node instanceof HTMLElement) {
+            node.querySelectorAll("div.Message").forEach(processMessage);
+          }
+        }
+      }
     });
+
+    const container = document;
+    if (container) {
+      observer.observe(container, {
+        childList: true,
+        subtree: true,
+      });
+    }
   });
 };
 
@@ -102,7 +122,6 @@ export const filterVideosByViews = (storageKey: string) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (node instanceof HTMLElement) {
-            console.log({ node });
             node
               .querySelectorAll("div.ytd-rich-item-renderer")
               .forEach(checkVideo);

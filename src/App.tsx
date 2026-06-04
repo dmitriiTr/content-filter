@@ -5,11 +5,13 @@ import type { Data } from "./utils/contentScripts";
 
 function App() {
   const [posts, setPosts] = useState(0);
+  const [hideForwarded, setHideForwarded] = useState(false);
 
   useEffect(() => {
     chrome.storage.sync.get(STORAGE_KEY).then(({ data }) => {
       console.log(data);
       setPosts((data as Data).postsNumber);
+      setHideForwarded((data as Data).hideForwarded);
     });
   }, []);
 
@@ -21,7 +23,15 @@ function App() {
           value={posts}
           onChange={(e) => setPosts(parseInt(e.target.value))}
         />
-        <button className="counter" onClick={() => handleClick(posts)}>
+        <input
+          type="checkbox"
+          checked={hideForwarded}
+          onChange={() => setHideForwarded((val) => !val)}
+        />
+        <button
+          className="counter"
+          onClick={() => handleClick(posts, hideForwarded)}
+        >
           Hide posts with less then {posts} replies
         </button>
       </section>
