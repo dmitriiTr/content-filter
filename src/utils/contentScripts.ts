@@ -1,179 +1,152 @@
-export type Data = {
-  postsNumber: number;
-  hideForwarded: boolean;
-};
+import type { Data } from "./constants";
 
-export const hidePostsBoardByReplies = (storageKey: string) => {
-  chrome.storage.sync.get(storageKey).then((data) => {
-    document.querySelectorAll("div.post").forEach((element) => {
-      const repliesSection = element.querySelector(".post__refmap");
-      const repliesCount =
-        repliesSection?.querySelectorAll(".post-reply-link").length ?? 99;
-      const hiddenClassName = "post_type_hidden";
+export const hidePostsBoardByReplies = (postsNumber: number) => {
+  document.querySelectorAll("div.post").forEach((element) => {
+    const repliesSection = element.querySelector(".post__refmap");
+    const repliesCount =
+      repliesSection?.querySelectorAll(".post-reply-link").length ?? 99;
+    const hiddenClassName = "post_type_hidden";
 
-      const postNumber = (data["data"] as Data).postsNumber;
-
-      if (postNumber <= repliesCount) {
-        element.classList.remove(hiddenClassName);
-      } else {
-        element.classList.add(hiddenClassName);
-      }
-    });
+    if (postsNumber <= repliesCount) {
+      element.classList.remove(hiddenClassName);
+    } else {
+      element.classList.add(hiddenClassName);
+    }
   });
 };
 
-export const hidePosts4BoardByReplies = (storageKey: string) => {
-  chrome.storage.sync.get(storageKey).then((data) => {
-    document.querySelectorAll("div.postContainer").forEach((element) => {
-      const repliesSection = element.querySelector(".backlink");
-      const repliesCount =
-        repliesSection?.querySelectorAll(".quotelink").length ?? 99;
-      const hiddenClass = "post-hidden";
+export const hidePosts4BoardByReplies = (postsNumber: number) => {
+  document.querySelectorAll("div.postContainer").forEach((element) => {
+    const repliesSection = element.querySelector(".backlink");
+    const repliesCount =
+      repliesSection?.querySelectorAll(".quotelink").length ?? 99;
+    const hiddenClassName = "post-hidden";
 
-      const postNumber = (data["data"] as Data).postsNumber;
-
-      if (postNumber <= repliesCount) {
-        element.classList.remove(hiddenClass);
-      } else {
-        element.classList.add(hiddenClass);
-      }
-    });
+    if (postsNumber <= repliesCount) {
+      element.classList.remove(hiddenClassName);
+    } else {
+      element.classList.add(hiddenClassName);
+    }
   });
 };
 
-export const filterPostsByReactions = (storageKey: string) => {
+export const filterPostsByReactions = (
+  postsNumber: number,
+  hideForwarded: boolean,
+) => {
   const getReactionNumber = (text: string) =>
     parseFloat(text) * (text.includes("K") ? 1000 : 1);
 
-  chrome.storage.sync.get(storageKey).then((data) => {
-    const processMessage = (messageElement: Element): void => {
-      const isForwared = !!messageElement.querySelector(".is-forwarded");
+  const processMessage = (messageElement: Element): void => {
+    const isForwared = !!messageElement.querySelector(".is-forwarded");
 
-      const reactionsElements = messageElement.querySelectorAll("button");
-      const reactionsCount = Array.prototype.reduce.call(
-        reactionsElements,
-        (sum, reaction) =>
-          ((sum as number) += getReactionNumber(reaction.textContent || "0")),
-        0,
-      ) as number;
+    const reactionsElements = messageElement.querySelectorAll("button");
+    const reactionsCount = Array.prototype.reduce.call(
+      reactionsElements,
+      (sum, reaction) =>
+        ((sum as number) += getReactionNumber(reaction.textContent || "0")),
+      0,
+    ) as number;
 
-      console.log(reactionsCount, reactionsElements);
+    if ((hideForwarded && isForwared) || reactionsCount < postsNumber) {
+      messageElement.setAttribute("hidden", "");
+    } else {
+      messageElement.removeAttribute("hidden");
+    }
+  };
 
-      if (
-        ((data["data"] as Data).hideForwarded && isForwared) ||
-        reactionsCount < (data["data"] as Data).postsNumber
-      ) {
-        messageElement.setAttribute("hidden", "");
+  processAndWatch("body", "div.Message", processMessage);
+};
+
+export const filterVideosByViews = (postsNumber: number) => {
+  const checkVideo = (element: Element): void => {
+    const viewCountData = element
+      .querySelectorAll("span.ytAttributedStringHost")[1]
+      ?.textContent?.split("\xa0");
+
+    if (viewCountData) {
+      const viewNumber = parseInt(viewCountData[0] || "0");
+      const orderOfMagnitude = viewCountData[1]?.includes(".")
+        ? 10 ** 3
+        : viewCountData[1]?.includes(" ")
+          ? 10 ** 6
+          : 1; // looking for thousands and millions
+      const totalViewsNumber = viewNumber * orderOfMagnitude;
+
+      if (totalViewsNumber < postsNumber) {
+        element.setAttribute("hidden", "");
       } else {
-        messageElement.removeAttribute("hidden");
+        element.removeAttribute("hidden");
       }
-    };
+    }
+  };
 
-    document.querySelectorAll("div.Message").forEach(processMessage);
+  processAndWatch("#contents", "div.ytd-rich-item-renderer", checkVideo);
+};
 
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (node instanceof HTMLElement) {
-            node.querySelectorAll("div.Message").forEach(processMessage);
-          }
+export const hideNoize = () => {
+  const cleanTile = (tile: Element) => {
+    tile.querySelector("section")?.setAttribute("hidden", "");
+    tile
+      .querySelector(".tsHeadline500Medium")
+      ?.setAttribute(
+        "style",
+        "-webkit-text-fill-color: var(--bgActionPrimary) !important; background-image: none !important",
+      );
+
+    tile.querySelectorAll(".tsBodyControl400Small").forEach((infoElement) => {
+      infoElement.setAttribute("hidden", "");
+    });
+  };
+
+  processAndWatch("#contentScrollPaginator", ".tile-root", cleanTile);
+};
+
+export const processAndWatch = (
+  scrollContainerSelector: string,
+  elementSelector: string,
+  processFn: (element: Element) => void,
+) => {
+  const container = document.querySelector(scrollContainerSelector);
+  if (!container) {
+    return;
+  }
+
+  container.querySelectorAll(elementSelector).forEach(processFn);
+
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node instanceof HTMLElement) {
+          node.querySelectorAll(elementSelector).forEach(processFn);
         }
       }
-    });
-
-    const container = document;
-    if (container) {
-      observer.observe(container, {
-        childList: true,
-        subtree: true,
-      });
     }
+  });
+
+  observer.observe(container, {
+    childList: true,
+    subtree: true,
   });
 };
 
-export const filterVideosByViews = (storageKey: string) => {
-  chrome.storage.sync.get(storageKey).then((data) => {
-    const checkVideo = (element: Element): void => {
-      const viewCountData = element
-        .querySelectorAll("span.ytAttributedStringHost")[1]
-        ?.textContent?.split("\xa0");
-
-      if (viewCountData) {
-        const postsNumber = (data["data"] as Data).postsNumber;
-        const viewNumber = parseInt(viewCountData[0] || "0");
-        const orderOfMagnitude = viewCountData[1]?.includes(".")
-          ? 10 ** 3
-          : viewCountData[1]?.includes(" ")
-            ? 10 ** 6
-            : 1; // looking for thousands and millions
-        const totalViewsNumber = viewNumber * orderOfMagnitude;
-
-        if (totalViewsNumber < postsNumber) {
-          element.setAttribute("hidden", "");
-        } else {
-          element.removeAttribute("hidden");
-        }
-      }
-    };
-
-    document.querySelectorAll("div.ytd-rich-item-renderer").forEach(checkVideo);
-
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (node instanceof HTMLElement) {
-            node
-              .querySelectorAll("div.ytd-rich-item-renderer")
-              .forEach(checkVideo);
-          }
-        }
-      }
-    });
-
-    const container = document.querySelector("#contents");
-    if (container) {
-      observer.observe(container, {
-        childList: true,
-        subtree: true,
-      });
-    }
-  });
+const urlToMethod = {
+  "web.telegram.org": filterPostsByReactions,
+  "www.youtube.com": filterVideosByViews,
+  "boards.4chan.org": hidePosts4BoardByReplies,
+  "www.ozon.ru": hideNoize,
 };
 
-export const hideNoize = (storageKey: string) => {
-  chrome.storage.sync.get(storageKey).then(() => {
-    const cleanTile = (tile: Element) => {
-      tile.querySelector("section")?.setAttribute("hidden", "");
-      tile
-        .querySelector(".tsHeadline500Medium")
-        ?.setAttribute(
-          "style",
-          "-webkit-text-fill-color: var(--bgActionPrimary) !important; background-image: none !important",
-        );
+document.styleSheets
+  .item(1)
+  ?.insertRule("[hidden] { display: none !important; }");
 
-      tile.querySelectorAll(".tsBodyControl400Small").forEach((infoElement) => {
-        infoElement.setAttribute("hidden", "");
-      });
-    };
-
-    document.querySelectorAll(".tile-root").forEach(cleanTile);
-
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (node instanceof HTMLElement) {
-            node.querySelectorAll(".tile-root").forEach(cleanTile);
-          }
-        }
-      }
-    });
-
-    const container = document.querySelector("#contentScrollPaginator");
-    if (container) {
-      observer.observe(container, {
-        childList: true,
-        subtree: true,
-      });
-    }
-  });
-};
+chrome.runtime.onMessage.addListener((msg: Data) => {
+  if (msg.type === "FILTER_POSTS") {
+    const url = (location.href || "")
+      .split("/")
+      .at(2) as keyof typeof urlToMethod;
+    const method = urlToMethod[url] ?? hidePostsBoardByReplies;
+    method(msg.postsNumber, msg.hideForwarded);
+  }
+});

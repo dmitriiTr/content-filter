@@ -1,15 +1,32 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import { handleClick, STORAGE_KEY } from "./utils/main";
-import type { Data } from "./utils/contentScripts";
+import { STORAGE_KEY, type Data } from "./utils/constants";
 
 function App() {
   const [posts, setPosts] = useState(0);
   const [hideForwarded, setHideForwarded] = useState(false);
 
+  const onHidePosts = () => {
+    chrome.storage.sync.set({
+      [STORAGE_KEY]: {
+        postsNumber: posts,
+        hideForwarded,
+      },
+    });
+
+    chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+      if (tab.id) {
+        chrome.tabs.sendMessage(tab.id, {
+          type: "FILTER_POSTS",
+          hideForwarded: hideForwarded,
+          postsNumber: posts,
+        });
+      }
+    });
+  };
+
   useEffect(() => {
     chrome.storage.sync.get(STORAGE_KEY).then(({ data }) => {
-      console.log(data);
       setPosts((data as Data).postsNumber);
       setHideForwarded((data as Data).hideForwarded);
     });
@@ -28,10 +45,7 @@ function App() {
           checked={hideForwarded}
           onChange={() => setHideForwarded((val) => !val)}
         />
-        <button
-          className="counter"
-          onClick={() => handleClick(posts, hideForwarded)}
-        >
+        <button className="counter" onClick={() => onHidePosts()}>
           Hide posts with less then {posts} replies
         </button>
       </section>
