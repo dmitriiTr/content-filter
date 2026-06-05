@@ -1,4 +1,4 @@
-import type { Data } from "./constants";
+import type { Data, UsedUrl } from "./constants";
 
 export const hidePostsBoardByReplies = (postsNumber: number) => {
   document.querySelectorAll("div.post").forEach((element) => {
@@ -130,23 +130,33 @@ export const processAndWatch = (
   });
 };
 
-const urlToMethod = {
+const urlToMethod: Record<
+  UsedUrl,
+  (postsNumber: number, hideForwarded: boolean) => void
+> = {
   "web.telegram.org": filterPostsByReactions,
   "www.youtube.com": filterVideosByViews,
   "boards.4chan.org": hidePosts4BoardByReplies,
   "www.ozon.ru": hideNoize,
 };
 
-document.styleSheets
-  .item(1)
-  ?.insertRule("[hidden] { display: none !important; }");
+const init = () => {
+  document.styleSheets
+    .item(1)
+    ?.insertRule("[hidden] { display: none !important; }");
 
-chrome.runtime.onMessage.addListener((msg: Data) => {
-  if (msg.type === "FILTER_POSTS") {
-    const url = (location.href || "")
-      .split("/")
-      .at(2) as keyof typeof urlToMethod;
-    const method = urlToMethod[url] ?? hidePostsBoardByReplies;
-    method(msg.postsNumber, msg.hideForwarded);
-  }
-});
+  const url = (location.href || "").split("/").at(2) as UsedUrl;
+
+  chrome.storage.sync.set({
+    ["url"]: url,
+  });
+
+  chrome.runtime.onMessage.addListener((msg: Data) => {
+    if (msg.type === "FILTER_POSTS") {
+      const method = urlToMethod[url] ?? hidePostsBoardByReplies;
+      method(msg.postsNumber, msg.hideForwarded);
+    }
+  });
+};
+
+init();
