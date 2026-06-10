@@ -102,6 +102,8 @@ export const hideNoize = () => {
   processAndWatch("#contentScrollPaginator", ".tile-root", cleanTile);
 };
 
+let observer: MutationObserver | null = null;
+
 export const processAndWatch = (
   scrollContainerSelector: string,
   elementSelector: string,
@@ -114,7 +116,11 @@ export const processAndWatch = (
 
   container.querySelectorAll(elementSelector).forEach(processFn);
 
-  const observer = new MutationObserver((mutations) => {
+  if(observer) {
+    observer.disconnect();
+  }
+
+  observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
         if (node instanceof HTMLElement) {
