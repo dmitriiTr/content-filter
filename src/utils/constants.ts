@@ -6,6 +6,7 @@ export type UsedUrl =
   | "web.telegram.org"
   | "www.youtube.com"
   | "boards.4chan.org"
+  | "2ch.su"
   | "www.ozon.ru";
 
 export type Data = {
@@ -34,6 +35,10 @@ export const urlToInfo: Record<UsedUrl, SiteInfo> = {
   },
   "boards.4chan.org": {
     name: "4chan",
+    hidePostsText: "Posts with less reactions than set will be hidden",
+  },
+  "2ch.su": {
+    name: "2ch",
     hidePostsText: "Posts with less reactions than set will be hidden",
   },
   "www.ozon.ru": {

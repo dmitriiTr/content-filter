@@ -19,6 +19,7 @@
 
 .menu {
   max-height: fit-content;
+  width: 400px;
 }
 
 .form {

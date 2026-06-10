@@ -116,7 +116,7 @@ export const processAndWatch = (
 
   container.querySelectorAll(elementSelector).forEach(processFn);
 
-  if(observer) {
+  if (observer) {
     observer.disconnect();
   }
 
@@ -143,6 +143,7 @@ const urlToMethod: Record<
   "web.telegram.org": filterPostsByReactions,
   "www.youtube.com": filterVideosByViews,
   "boards.4chan.org": hidePosts4BoardByReplies,
+  "2ch.su": hidePostsBoardByReplies,
   "www.ozon.ru": hideNoize,
 };
 
