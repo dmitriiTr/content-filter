@@ -152,14 +152,9 @@ const init = () => {
     .item(1)
     ?.insertRule("[hidden] { display: none !important; }");
 
-  const url = (location.href || "").split("/").at(2) as UsedUrl;
-
-  chrome.storage.sync.set({
-    ["url"]: url,
-  });
-
   chrome.runtime.onMessage.addListener((msg: Data) => {
     if (msg.type === "FILTER_POSTS") {
+      const url = (location.href || "").split("/").at(2) as UsedUrl;
       const method = urlToMethod[url] ?? hidePostsBoardByReplies;
       method(msg.postsNumber, msg.hideForwarded);
     }

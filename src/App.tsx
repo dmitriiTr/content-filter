@@ -26,7 +26,7 @@ function App() {
     });
   };
 
-  const info = urlToInfo[url ?? "www.ozon.ru"];
+  const info = url ? urlToInfo[url] : null;
 
   useEffect(() => {
     chrome.storage.sync.get(STORAGE_KEY).then(({ data }) => {
@@ -34,38 +34,54 @@ function App() {
       setHideForwarded((data as Data).hideForwarded);
     });
 
-    chrome.storage.sync.get("url").then(({ url }) => {
-      setUrl(url as keyof typeof urlToInfo);
-    });
+    const getHostName = async () => {
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      setUrl(
+        tab.url ? (new URL(tab.url).hostname as keyof typeof urlToInfo) : null,
+      );
+    };
+
+    getHostName();
   }, []);
 
   return (
     <section className="menu">
       <form className="form">
-        <h3>Site detected: {info.name}</h3>
-        {info.hidePostsText && (
-          <label>
-            {info.hidePostsText}
-            <input
-              type="number"
-              value={posts}
-              onChange={(e) => setPosts(parseInt(e.target.value))}
-            />
-          </label>
+        <h3>Site detected: {info?.name ?? "Not supported"}</h3>
+        {info && (
+          <>
+            {info.hidePostsText && (
+              <label>
+                {info.hidePostsText}
+                <input
+                  type="number"
+                  value={posts}
+                  onChange={(e) => setPosts(parseInt(e.target.value))}
+                />
+              </label>
+            )}
+            {info.hideForwardedText && (
+              <label>
+                {info.hideForwardedText}
+                <input
+                  type="checkbox"
+                  checked={hideForwarded}
+                  onChange={() => setHideForwarded((val) => !val)}
+                />
+              </label>
+            )}
+            <button
+              type="button"
+              className="counter"
+              onClick={() => onHidePosts()}
+            >
+              {info.buttonText ?? "Apply"}
+            </button>
+          </>
         )}
-        {info.hideForwardedText && (
-          <label>
-            {info.hideForwardedText}
-            <input
-              type="checkbox"
-              checked={hideForwarded}
-              onChange={() => setHideForwarded((val) => !val)}
-            />
-          </label>
-        )}
-        <button className="counter" onClick={() => onHidePosts()}>
-          {info.buttonText ?? "Apply"}
-        </button>
       </form>
     </section>
   );
