@@ -148,10 +148,6 @@ const urlToMethod: Record<
 };
 
 const init = () => {
-  document.styleSheets
-    .item(1)
-    ?.insertRule("[hidden] { display: none !important; }");
-
   chrome.runtime.onMessage.addListener((msg: Data) => {
     if (msg.type === "FILTER_POSTS") {
       const url = (location.href || "").split("/").at(2) as UsedUrl;
