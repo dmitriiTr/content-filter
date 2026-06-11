@@ -18,6 +18,10 @@
     {
       "matches": ["<all_urls>"],
       "js": ["contentScripts.js"]
+    },
+    {
+      "matches": ["*://web.telegram.org/*"],
+      "css": ["telegramContentStyles.css"]
     }
   ]
 }

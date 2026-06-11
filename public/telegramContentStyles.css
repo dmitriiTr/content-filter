@@ -1,0 +1,15 @@
+.message-highlighted {
+  .message-content {
+    background-color: #ecea93b5 !important;
+  }
+  .CommentButton {
+    background-color: #ecea93b5 !important;
+  }
+  .corner {
+    fill: #ecea93b5 !important;
+  }
+}
+
+.message-blurred {
+  filter: blur(10px);
+}

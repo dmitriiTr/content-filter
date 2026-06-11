@@ -34,8 +34,12 @@ export const filterPostsByReactions = (
   postsNumber: number,
   hideForwarded: boolean,
 ) => {
-  const getReactionNumber = (text: string) =>
-    parseFloat(text) * (text.includes("K") ? 1000 : 1);
+  const getReactionNumber = (text: string) => {
+    const reactionNumber = parseInt(text);
+    return Number.isNaN(reactionNumber)
+      ? 0
+      : reactionNumber * (text.includes("K") ? 1000 : 1);
+  };
 
   const processMessage = (messageElement: Element): void => {
     const isForwared = !!messageElement.querySelector(".is-forwarded");
@@ -48,10 +52,21 @@ export const filterPostsByReactions = (
       0,
     ) as number;
 
-    if ((hideForwarded && isForwared) || reactionsCount < postsNumber) {
-      messageElement.setAttribute("hidden", "");
+    messageElement.setAttribute(
+      "title",
+      `${reactionsCount.toString()} reactions`,
+    );
+
+    if (!hideForwarded && postsNumber === 0) {
+      // if empty inputs, clean all added styling
+      messageElement.classList.remove("message-highlighted");
+      messageElement.classList.remove("message-blurred");
+    } else if ((hideForwarded && isForwared) || reactionsCount < postsNumber) {
+      messageElement.classList.remove("message-highlighted");
+      messageElement.classList.add("message-blurred");
     } else {
-      messageElement.removeAttribute("hidden");
+      messageElement.classList.remove("message-blurred");
+      messageElement.classList.add("message-highlighted");
     }
   };
 
